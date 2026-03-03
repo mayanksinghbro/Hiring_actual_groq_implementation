@@ -47,7 +47,7 @@ export default function LandingPage() {
                         </h1>
 
                         <p className="text-[18px] text-gray-600 leading-relaxed max-w-[560px] mx-auto mb-10">
-                            NextHire connects students, companies, and placement cells on one intelligent platform — powered by Gemini AI for blind hiring, skill gap analysis, and career roadmapping.
+                            NextHire connects students, companies, and placement cells on one intelligent platform — powered by Groq AI for blind hiring, skill gap analysis, and career roadmapping.
                         </p>
 
                         <div className="flex items-center justify-center gap-4">
@@ -89,7 +89,7 @@ export default function LandingPage() {
 
                 <div className="grid grid-cols-3 gap-6">
                     {[
-                        { icon: 'smart_toy', title: 'Gemini AI Resume Screening', desc: 'Upload resumes and let our AI rank candidates based on job requirements — completely blind, bias-free, and instant.' },
+                        { icon: 'smart_toy', title: 'Groq AI Resume Screening', desc: 'Upload resumes and let our AI rank candidates based on job requirements — completely blind, bias-free, and instant.' },
                         { icon: 'route', title: 'Career Roadmapping', desc: 'Students get personalized skill gap analysis and a step-by-step roadmap to their dream job, powered by AI.' },
                         { icon: 'analytics', title: 'Real-Time Placement Analytics', desc: 'Placement cells get live dashboards with trend charts, batch analytics, and company-student mapping.' },
                         { icon: 'verified_user', title: 'Blind Hiring Principles', desc: 'Names, photos, and personal info are hidden during screening. Only skills and experience matter.' },
@@ -146,9 +146,9 @@ export default function LandingPage() {
                                 <span className="material-symbols-outlined text-indigo-600 text-[32px]">business</span>
                             </div>
                             <h3 className="text-[22px] font-bold text-gray-900 mb-3">Company Portal</h3>
-                            <p className="text-[14px] text-gray-500 leading-relaxed mb-6">Post jobs, upload bulk resumes, and let Gemini AI rank candidates with blind hiring — zero bias, instant results.</p>
+                            <p className="text-[14px] text-gray-500 leading-relaxed mb-6">Post jobs, upload bulk resumes, and let Groq AI rank candidates with blind hiring — zero bias, instant results.</p>
                             <ul className="space-y-2 mb-8">
-                                {['Gemini AI Screening', 'Blind Hiring', 'Candidate Leaderboard', 'Email Automation'].map((item) => (
+                                {['Groq AI Screening', 'Blind Hiring', 'Candidate Leaderboard', 'Email Automation'].map((item) => (
                                     <li key={item} className="flex items-center gap-2 text-[13px] text-gray-600">
                                         <span className="material-symbols-outlined text-green-500 text-[16px]">check_circle</span>{item}
                                     </li>
@@ -195,7 +195,7 @@ export default function LandingPage() {
                     <div className="grid grid-cols-3 gap-8">
                         {[
                             { step: '01', title: 'Post & Upload', desc: 'Companies post job requirements and upload candidate resumes in bulk.', icon: 'upload_file' },
-                            { step: '02', title: 'AI Analyzes', desc: 'Gemini AI scores and ranks every candidate — blindly, based on skills alone.', icon: 'psychology' },
+                            { step: '02', title: 'AI Analyzes', desc: 'Groq AI scores and ranks every candidate — blindly, based on skills alone.', icon: 'psychology' },
                             { step: '03', title: 'Hire the Best', desc: 'Review the leaderboard, send interview invites, and close offers — all in one place.', icon: 'handshake' },
                         ].map((item) => (
                             <div key={item.step} className="text-center">

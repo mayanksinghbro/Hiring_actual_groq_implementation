@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import CreateJobForm from '@/components/company/CreateJobForm';
 import CandidateLeaderboard from '@/components/company/CandidateLeaderboard';
+import InterviewRoundsModal from '@/components/company/InterviewRoundsModal';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { mockResumeTexts } from '@/data/mockResumes';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -35,6 +36,8 @@ export default function CompanyPortal() {
     const [hiredCandidates, setHiredCandidates] = useState([]);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [rightPanelOpen, setRightPanelOpen] = useState(false);
+    const [interviewData, setInterviewData] = useState({});
+    const [interviewCandidate, setInterviewCandidate] = useState(null);
 
     useEffect(() => {
         // Load any previously posted jobs
@@ -98,7 +101,13 @@ export default function CompanyPortal() {
             const sortedCandidates = data.candidates;
             const finalCandidates = topN > 0 ? sortedCandidates.slice(0, topN) : sortedCandidates;
 
-            setCandidates(finalCandidates);
+            // Attach original rawText back to candidates so the Resume Viewer can display it
+            const candidatesWithText = finalCandidates.map(c => {
+                const originalResume = resumes.find(r => r.id === c.id);
+                return { ...c, rawText: originalResume?.rawText || '' };
+            });
+
+            setCandidates(candidatesWithText);
             setShowLeaderboard(true);
 
             // Save to shared store (simulates DB write)
@@ -127,6 +136,14 @@ export default function CompanyPortal() {
 
     const handleHire = (candidate) => {
         setHiredCandidates(prev => [...prev, { ...candidate, hiredAt: new Date().toISOString(), jobTitle }]);
+    };
+
+    const handleOpenInterview = (candidate) => {
+        setInterviewCandidate(candidate);
+    };
+
+    const handleUpdateInterview = (candidateId, data) => {
+        setInterviewData(prev => ({ ...prev, [candidateId]: data }));
     };
 
     const stats = [
@@ -181,6 +198,7 @@ export default function CompanyPortal() {
                     {[
                         { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
                         { id: 'postings', label: 'Job Postings', icon: 'work' },
+                        { id: 'interviews', label: 'Interviews', icon: 'record_voice_over' },
                         { id: 'analytics', label: 'Analytics', icon: 'analytics' },
                     ].map(tab => (
                         <button key={tab.id} onClick={() => { setActiveTab(tab.id); setSidebarOpen(false); }} className={`w-full flex items-center px-4 py-2 text-[14px] font-medium rounded-lg transition-colors ${activeTab === tab.id ? 'sidebar-item-active' : 'text-gray-700 hover:bg-white/30 hover:text-gray-900'}`}>
@@ -190,7 +208,7 @@ export default function CompanyPortal() {
                 </nav>
                 <div className="mt-auto pt-6 border-t border-white/40">
                     <p className="text-[13px] text-gray-500 mb-2">Hiring powered by</p>
-                    <p className="text-[16px] font-bold text-gray-900">Gemini AI</p>
+                    <p className="text-[16px] font-bold text-gray-900">Groq AI</p>
                     <p className="text-[12px] text-gray-400 mt-1">Blind hiring • Bias-free screening</p>
                 </div>
             </aside>
@@ -233,10 +251,10 @@ export default function CompanyPortal() {
                                     </div>
                                 )}
 
-                                {analyzing && <div className="mt-8"><LoadingSpinner text="Analyzing Resumes with Gemini AI" /></div>}
+                                {analyzing && <div className="mt-8"><LoadingSpinner text="Analyzing Resumes with Groq AI" /></div>}
 
                                 {showLeaderboard && !analyzing && candidates.length > 0 && (
-                                    <div className="mt-8"><CandidateLeaderboard candidates={candidates} jobTitle={jobTitle} resumeTexts={mockResumeTexts} onHire={handleHire} /></div>
+                                    <div className="mt-8"><CandidateLeaderboard candidates={candidates} jobTitle={jobTitle} resumeTexts={mockResumeTexts} onHire={handleHire} interviewData={interviewData} onOpenInterview={handleOpenInterview} /></div>
                                 )}
                             </>
                         )}
@@ -275,6 +293,83 @@ export default function CompanyPortal() {
                                                 )}
                                             </div>
                                         ))}
+                                    </div>
+                                )}
+                            </>
+                        )}
+
+                        {/* ===== INTERVIEWS TAB ===== */}
+                        {activeTab === 'interviews' && (
+                            <>
+                                <div className="mb-6">
+                                    <h1 className="text-[28px] font-bold text-gray-900">Interview Pipeline</h1>
+                                    <p className="text-[15px] text-gray-500 mt-1">Track and manage candidate interview rounds</p>
+                                </div>
+                                {Object.keys(interviewData).length === 0 ? (
+                                    <div className="text-center py-16">
+                                        <span className="material-symbols-outlined text-[56px] text-gray-300 block mb-4">record_voice_over</span>
+                                        <p className="text-[16px] font-medium text-gray-400 mb-2">No interviews started yet</p>
+                                        <p className="text-[13px] text-gray-300 mb-4">Go to Dashboard, analyze resumes, and click "Interview" on a candidate</p>
+                                        <button onClick={() => setActiveTab('dashboard')} className="text-blue-600 font-semibold text-[14px] hover:underline">Go to Dashboard</button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {Object.values(interviewData).map(entry => {
+                                            const roundCount = entry.rounds?.length || 0;
+                                            const acceptedCount = entry.rounds?.filter(r => r.status === 'accepted').length || 0;
+                                            const rejectedCount = entry.rounds?.filter(r => r.status === 'rejected').length || 0;
+                                            const pendingCount = entry.rounds?.filter(r => r.status === 'pending').length || 0;
+                                            const latestRound = entry.rounds?.[entry.rounds.length - 1];
+                                            return (
+                                                <div
+                                                    key={entry.candidateId}
+                                                    onClick={() => {
+                                                        // Find the full candidate object from all candidates
+                                                        const fullCandidate = candidates.find(c => c.id === entry.candidateId) || { id: entry.candidateId, fileName: entry.candidateName };
+                                                        handleOpenInterview(fullCandidate);
+                                                    }}
+                                                    className="rounded-[16px] p-5 shadow-sm cursor-pointer hover:shadow-md transition-all border border-transparent hover:border-gray-200"
+                                                    style={{ backgroundColor: '#DCD9D4', backgroundImage: 'linear-gradient(to bottom, rgba(255,255,255,0.50) 0%, rgba(0,0,0,0.50) 100%), radial-gradient(at 50% 0%, rgba(255,255,255,0.10) 0%, rgba(0,0,0,0.50) 50%)', backgroundBlendMode: 'soft-light, screen' }}
+                                                >
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className={`h-12 w-12 rounded-xl flex items-center justify-center text-[16px] font-bold border-2 ${entry.overallStatus === 'accepted' ? 'bg-emerald-100 border-emerald-300 text-emerald-700' :
+                                                                entry.overallStatus === 'rejected' ? 'bg-red-100 border-red-300 text-red-700' :
+                                                                    'bg-blue-100 border-blue-300 text-blue-700'
+                                                                }`}>
+                                                                {(entry.candidateName || 'U').charAt(0).toUpperCase()}
+                                                            </div>
+                                                            <div>
+                                                                <h3 className="text-[15px] font-bold text-gray-900 capitalize">{entry.candidateName || entry.candidateId}</h3>
+                                                                <p className="text-[12px] text-gray-500 font-mono mt-0.5">{entry.candidateId}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="flex items-center gap-4 text-[12px]">
+                                                                <span className="text-gray-500">{roundCount} round{roundCount !== 1 ? 's' : ''}</span>
+                                                                {acceptedCount > 0 && <span className="text-emerald-600 font-semibold">{acceptedCount} accepted</span>}
+                                                                {rejectedCount > 0 && <span className="text-red-600 font-semibold">{rejectedCount} rejected</span>}
+                                                                {pendingCount > 0 && <span className="text-amber-600 font-semibold">{pendingCount} pending</span>}
+                                                            </div>
+                                                            <span className={`px-3 py-1 rounded-full text-[12px] font-bold ${entry.overallStatus === 'accepted' ? 'bg-emerald-100 text-emerald-700' :
+                                                                entry.overallStatus === 'rejected' ? 'bg-red-100 text-red-700' :
+                                                                    'bg-blue-100 text-blue-700'
+                                                                }`}>
+                                                                {entry.overallStatus === 'accepted' ? '✓ Accepted' :
+                                                                    entry.overallStatus === 'rejected' ? '✗ Rejected' : 'In Progress'}
+                                                            </span>
+                                                            <span className="material-symbols-outlined text-gray-400 text-[20px]">chevron_right</span>
+                                                        </div>
+                                                    </div>
+                                                    {latestRound && (
+                                                        <div className="mt-3 pt-3 border-t border-white/30 flex items-center gap-3">
+                                                            <span className="text-[11px] text-gray-500">Latest: <strong>{latestRound.type}</strong> round</span>
+                                                            {latestRound.review && <span className="text-[11px] text-gray-400 truncate max-w-sm">"{latestRound.review.substring(0, 80)}{latestRound.review.length > 80 ? '...' : ''}"</span>}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </>
@@ -358,6 +453,16 @@ export default function CompanyPortal() {
                     </div>
                 </div>
             </aside>
+
+            {/* Interview Rounds Modal */}
+            {interviewCandidate && (
+                <InterviewRoundsModal
+                    candidate={interviewCandidate}
+                    interviewData={interviewData[interviewCandidate.id]}
+                    onUpdateInterview={handleUpdateInterview}
+                    onClose={() => setInterviewCandidate(null)}
+                />
+            )}
         </div>
     );
 }

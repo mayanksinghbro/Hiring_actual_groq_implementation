@@ -4,7 +4,7 @@ import { useState } from 'react';
 import EmailModal from './EmailModal';
 import ResumeViewerModal from './ResumeViewerModal';
 
-export default function CandidateLeaderboard({ candidates, jobTitle, resumeTexts }) {
+export default function CandidateLeaderboard({ candidates, jobTitle, resumeTexts, interviewData = {}, onOpenInterview }) {
     const [emailCandidate, setEmailCandidate] = useState(null);
     const [viewCandidate, setViewCandidate] = useState(null);
     const [shortlisted, setShortlisted] = useState({});
@@ -43,7 +43,7 @@ export default function CandidateLeaderboard({ candidates, jobTitle, resumeTexts
                                     Showing Top {candidates.length}
                                 </span>
                             </div>
-                            <p className="text-[13px] text-gray-500 mt-1">Ranked by Gemini AI Match Score — Blind Hiring Mode</p>
+                            <p className="text-[13px] text-gray-500 mt-1">Ranked by Groq AI Match Score — Blind Hiring Mode</p>
                         </div>
                     </div>
                     <span className="badge badge-purple"><span className="material-symbols-outlined text-[14px]">shield</span>Names Hidden</span>
@@ -88,7 +88,19 @@ export default function CandidateLeaderboard({ candidates, jobTitle, resumeTexts
                                                 </div>
                                                 <div className="flex flex-col">
                                                     <span className="font-semibold text-gray-900 text-[13px] line-clamp-1 capitalize">{candidateName}</span>
-                                                    <span className="text-gray-400 text-[11px] font-mono mt-0.5">{candidate.id}</span>
+                                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                                        <span className="text-gray-400 text-[11px] font-mono">{candidate.id}</span>
+                                                        {interviewData[candidate.id] && (
+                                                            <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold ${interviewData[candidate.id].overallStatus === 'accepted' ? 'bg-emerald-100 text-emerald-700' :
+                                                                    interviewData[candidate.id].overallStatus === 'rejected' ? 'bg-red-100 text-red-700' :
+                                                                        'bg-blue-100 text-blue-700'
+                                                                }`}>
+                                                                {interviewData[candidate.id].overallStatus === 'accepted' ? '✓ Accepted' :
+                                                                    interviewData[candidate.id].overallStatus === 'rejected' ? '✗ Rejected' :
+                                                                        `Round ${interviewData[candidate.id].rounds?.length || 0}`}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>
@@ -164,6 +176,16 @@ export default function CandidateLeaderboard({ candidates, jobTitle, resumeTexts
                                                     {candidate.fileName ? 'Resume' : 'Unavailable'}
                                                 </button>
                                                 <button
+                                                    onClick={() => onOpenInterview && onOpenInterview(candidate)}
+                                                    className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[12px] font-semibold transition-all ${interviewData[candidate.id]
+                                                            ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100'
+                                                            : 'bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100'
+                                                        }`}
+                                                >
+                                                    <span className="material-symbols-outlined text-[14px]">record_voice_over</span>
+                                                    {interviewData[candidate.id] ? 'View Interview' : 'Interview'}
+                                                </button>
+                                                <button
                                                     onClick={() => handleShortlist(candidate)}
                                                     className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[12px] font-semibold transition-all ${shortlisted[candidate.id] ? 'bg-green-50 text-green-700 border border-green-200' : 'btn-primary text-[12px]'}`}
                                                 >
@@ -181,7 +203,7 @@ export default function CandidateLeaderboard({ candidates, jobTitle, resumeTexts
             </div>
 
             {emailCandidate && <EmailModal candidate={emailCandidate} jobTitle={jobTitle} onClose={() => setEmailCandidate(null)} />}
-            {viewCandidate && <ResumeViewerModal candidate={viewCandidate} resumeText={resumeTexts?.[viewCandidate.fileName] || ''} onClose={() => setViewCandidate(null)} />}
+            {viewCandidate && <ResumeViewerModal candidate={viewCandidate} resumeText={viewCandidate.rawText || resumeTexts?.[viewCandidate.fileName] || ''} onClose={() => setViewCandidate(null)} />}
         </>
     );
 }
